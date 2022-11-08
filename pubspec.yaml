@@ -1,7 +1,6 @@
 name: phased
 description: Simplified state management focused on animations
 version: 0.0.1
-publish_to: none
 
 environment:
   sdk: ">=2.18.0 <3.0.0"
