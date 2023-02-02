@@ -108,7 +108,7 @@ void main() {
       );
 
       expect(find.text('A'), findsOneWidget);
-      state.start();
+      state.next();
 
       await tester.pump();
 
@@ -170,6 +170,62 @@ void main() {
 
       expect(find.text('B'), findsOneWidget);
       expect(state.value, isFalse);
+    });
+
+    testWidgets('can start over', (tester) async {
+      final state = PhasedState(
+        values: [true, false],
+        autostart: false,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Blink(state: state),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('A'), findsOneWidget);
+      state.next();
+
+      await tester.pump();
+
+      expect(find.text('B'), findsOneWidget);
+
+      state.next(loop: false);
+      await tester.pump();
+
+      expect(find.text('B'), findsOneWidget);
+      expect(state.value, isFalse);
+
+      state.start();
+      await tester.pump();
+      expect(find.text('A'), findsOneWidget);
+    });
+
+    testWidgets('can receive a ticker', (tester) async {
+      final state = PhasedState(
+        values: [true, false],
+        autostart: false,
+        ticker: Duration(milliseconds: 1),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Blink(state: state),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('A'), findsOneWidget);
+
+      await tester.pump();
+
+      expect(find.text('B'), findsOneWidget);
     });
   });
 }
