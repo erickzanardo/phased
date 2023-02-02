@@ -9,6 +9,7 @@ class PhasedState<T> extends ChangeNotifier {
     required List<T> values,
     bool autostart = true,
     T? initialValue,
+    this.ticker,
   })  : _values = values,
         _autostart = autostart {
     _value = initialValue ?? values.first;
@@ -20,6 +21,9 @@ class PhasedState<T> extends ChangeNotifier {
 
   final bool _autostart;
 
+  /// An optional ticker, when informed the state will change on each tick.
+  final Duration? ticker;
+
   late int _index;
 
   /// Returns the current value of the state.
@@ -27,9 +31,9 @@ class PhasedState<T> extends ChangeNotifier {
 
   /// Sets a new value.
   set value(T v) {
-    notifyListeners();
     _value = v;
     _index = _values.indexOf(_value);
+    notifyListeners();
   }
 
   /// Sets the next value of the state. If [loop] is set to true, this method
@@ -42,10 +46,10 @@ class PhasedState<T> extends ChangeNotifier {
     }
   }
 
-  /// Sets the first value as the current and calls [next] right after.
+  /// Sets the first value as the current and notify its listeners right after.
   void start() {
     value = _values.first;
-    next();
+    notifyListeners();
   }
 
   /// Returns a mapped value according the [values] map.
@@ -111,25 +115,47 @@ abstract class Phased<T> extends StatefulWidget {
   Widget build(BuildContext context);
 }
 
-class _PhasedState<T> extends State<Phased<T>> {
+class _PhasedState<T> extends State<Phased<T>>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _ticker;
+
+  DateTime? _lastUpdated;
+
   @override
   void initState() {
     super.initState();
 
     widget.state.addListener(_update);
 
-    if (widget.state._autostart) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.state.next();
-      });
+    if (widget.state.ticker != null) {
+      _ticker = AnimationController(vsync: this, duration: widget.state.ticker)
+        ..addListener(() {
+          final now = DateTime.now();
+          if (_lastUpdated == null ||
+              now.millisecondsSinceEpoch -
+                      _lastUpdated!.millisecondsSinceEpoch >=
+                  widget.state.ticker!.inMilliseconds) {
+            widget.state.next();
+            _lastUpdated = now;
+          }
+        });
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_ticker != null) {
+        _ticker!.repeat(period: widget.state.ticker);
+      } else if (widget.state._autostart) {
+        widget.state.next();
+      }
+    });
   }
 
   @override
   void dispose() {
-    super.dispose();
-
+    _ticker?.dispose();
     widget.state.removeListener(_update);
+
+    super.dispose();
   }
 
   void _update() {
