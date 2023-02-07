@@ -227,5 +227,51 @@ void main() {
 
       expect(find.text('B'), findsOneWidget);
     });
+
+    testWidgets('attaches to a new state', (tester) async {
+      final key = GlobalKey();
+      final state = PhasedState(
+        values: [true, false],
+        autostart: false,
+        ticker: Duration(milliseconds: 1),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    ElevatedButton(
+                      child: Text('Rebuild'),
+                      onPressed: () {
+                        setState(() {});
+                      },
+                    ),
+                    Center(
+                      child: Blink(
+                        key: key,
+                        state: state,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('A'), findsOneWidget);
+
+      await tester.tap(find.text('Rebuild'));
+      await tester.pump();
+
+      expect(find.text('B'), findsOneWidget);
+
+      await tester.pump();
+
+      expect(find.text('A'), findsOneWidget);
+    });
   });
 }

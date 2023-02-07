@@ -151,6 +151,13 @@ class _PhasedState<T> extends State<Phased<T>>
   }
 
   @override
+  void didUpdateWidget(Phased<T> old) {
+    super.didUpdateWidget(old);
+    old.state.removeListener(_update);
+    widget.state.addListener(_update);
+  }
+
+  @override
   void dispose() {
     _ticker?.dispose();
     widget.state.removeListener(_update);
