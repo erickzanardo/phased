@@ -10,6 +10,7 @@ class PhasedState<T> extends ChangeNotifier {
     bool autostart = true,
     T? initialValue,
     this.ticker,
+    this.loopTicker = true,
   })  : _values = values,
         _autostart = autostart {
     _value = initialValue ?? values.first;
@@ -23,6 +24,10 @@ class PhasedState<T> extends ChangeNotifier {
 
   /// An optional ticker, when informed the state will change on each tick.
   final Duration? ticker;
+
+  /// When a ticker is informed, this flag indicates if the state should loop
+  /// when running through all the values.
+  final bool loopTicker;
 
   late int _index;
 
@@ -113,6 +118,9 @@ abstract class Phased<T> extends StatefulWidget {
 
   /// Override to build the animation.
   Widget build(BuildContext context);
+
+  /// Called when the Phased state is initialized.
+  void onInit() {}
 }
 
 class _PhasedState<T> extends State<Phased<T>>
@@ -135,7 +143,7 @@ class _PhasedState<T> extends State<Phased<T>>
               now.millisecondsSinceEpoch -
                       _lastUpdated!.millisecondsSinceEpoch >=
                   widget.state.ticker!.inMilliseconds) {
-            widget.state.next();
+            widget.state.next(loop: widget.state.loopTicker);
             _lastUpdated = now;
           }
         });
@@ -148,6 +156,8 @@ class _PhasedState<T> extends State<Phased<T>>
         widget.state.next();
       }
     });
+
+    widget.onInit();
   }
 
   @override
